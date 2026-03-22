@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="VAF-TC Visualizer | Clinical Decision Support", layout="wide")
 st.title("🧪 VAF–Tumor Content Graph Visualizer")
 
-# Custom CSS for the Advice Box
+# Custom CSS for the Advice Box (Corrected parameter name)
 st.markdown("""
 <style>
 .advice-box { padding: 15px; border-radius: 5px; border: 1px solid #d4af37; background-color: #f9f9f9; color: #333; }
 .advice-title { font-weight: bold; font-size: 1.1em; color: #b71c1c; margin-bottom: 5px; }
 </style>
-""", unsafe_allow_value=True)
+""", unsafe_allow_html=True)
 
 st.markdown("""
 ### Interactive interpretation of variant allele fraction in tumor-only sequencing data.
@@ -50,7 +50,7 @@ elif 0.60 <= tc <= 0.70:
     advice_text = "**TC Gray Zone Alert (60-70%):** At this tumor content, theoretical lines for germline and somatic LOH overlap significantly. Interpret with caution. Clinical integration (age of onset, pedigree) is prioritized over VAF-based modeling."
 # Likely Germline LOH (Deletion or CN-LOH)
 elif abs(vaf - germline_loh_cn) < tol or abs(vaf - germline_loh_del) < tol:
-    advice_text = "**Likely Germline with LOH:** The high VAF relative to TC suggests a hereditary variant that has undergone biallelic inactivation (Loss of Heterozygosity) within the tumor."
+    advice_text = "**Likely Germline with LOH:** The high VAF relative to TC suggests a hereditary variant that has undergone biallelic inactivation (Loss of Heterosity) within the tumor."
 # Likely Germline Hetero
 elif abs(vaf - germline_hetero) < tol:
     advice_text = "**Likely Heterozygous Germline:** The VAF remains stable at approximately 0.5, consistent with a constitutional heterozygous state regardless of tumor content."
@@ -83,22 +83,4 @@ with col1:
     
     ax.set_xlabel("Tumor Content (TC)", fontsize=12)
     ax.set_ylabel("Variant Allele Fraction (VAF)", fontsize=12)
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    ax.grid(True, linestyle='--', alpha=0.3)
-    st.pyplot(fig)
-
-with col2:
-    st.header("Summary")
-    st.write(f"**Gene:** {gene}")
-    st.write(f"**TC:** {tc*100:.0f}% | **VAF:** {vaf*100:.0f}%")
-    st.write("---")
-    
-    st.header("Clinical Guidance")
-    st.markdown(f"<div class='advice-box'><div class='advice-title'>Automated Talking Points</div>{advice_text}</div>", unsafe_allow_value=True)
-    st.markdown("<p style='font-size: 0.8em; color: gray; margin-top:10px;'>Note: This guidance is based on mathematical proximity to diploid models and requires clinical correlation.</p>", unsafe_allow_value=True)
-
-# --- Disclaimer ---
-st.divider()
-st.caption("Clinical Disclaimer: This tool is for educational and supportive visual communication purposes only. It is not a diagnostic medical device. Interpretations must be integrated with full clinical and family history.")
+    ax.set_xlim
