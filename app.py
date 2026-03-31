@@ -16,7 +16,7 @@ st.sidebar.header("📋 Patient Data Input")
 st.sidebar.markdown("👉 **Please enter Gene Name, TC, and VAF.**")
 
 gene_name = st.sidebar.text_input("Gene Name", value="BRCA2")
-tc_input = st.sidebar.slider("Pathological Tumor Content (TC %)", 0, 100, 50) # Set default to 50 to show the trap
+tc_input = st.sidebar.slider("Pathological Tumor Content (TC %)", 0, 100, 50)
 vaf_input = st.sidebar.slider("Variant Allele Fraction (VAF %)", 0, 100, 50)
 
 st.sidebar.markdown("---")
@@ -25,7 +25,7 @@ st.sidebar.info(f"💡 **Analysis Mode:** {gene_name}")
 tc = tc_input / 100.0
 vaf = vaf_input / 100.0
 
-# 4. Mathematical Foundation (5-Line Logic)
+# 4. Mathematical Foundation
 x_range = np.linspace(0.01, 1.0, 100)
 y_germ_cnloh = (1 + x_range) / 2
 y_germ_del = 1 / (2 - x_range)
@@ -39,7 +39,7 @@ col_alerts, col_graph = st.columns([1, 2])
 # --- LEFT COLUMN: Clinical Interpretation & Alerts ---
 with col_alerts:
     st.subheader("📋 Interpretation & Alerts")
-    
+
     # Mathematical Match Analysis (±10% error margin)
     error_margin = 0.10
     models_check = {
@@ -55,28 +55,28 @@ with col_alerts:
         st.success(f"**Compatible Models for {gene_name}:**")
         for m in compatible_models:
             st.markdown(f"- **{m}**")
+    else:
+        st.info(f"**Insight:** VAF does not closely align with standard models for {gene_name}.")
 
-    # --- Specific Clinical Alerts (The "Traps") ---
-    
-    # NEW: The cnLOH Trap (TC ≈ 50%)
+    # --- Clinical Alerts (mutually exclusive by TC range) ---
+
+    # Trap 1: Somatic cnLOH Trap (TC 40-60%)
     if 40 <= tc_input <= 60:
         st.warning(f"⚠️ **Somatic cnLOH Trap:** At TC {tc_input}%, Somatic cnLOH (UPD) produces a VAF of ~50%, perfectly mimicking a Germline Heterozygous variant. Pair-normal testing is essential.")
 
-    # The Deletion Trap (TC 60-75%)
-    if 60 <= tc_input <= 75:
-        st.warning(f"⚠️ **50% VAF Trap (Del):** At this TC, Somatic LOH (deletion) results in a VAF of ~50%. Do not assume germline origin without confirmation.")
+    # Trap 2: Somatic LOH Deletion Trap (TC 61-69%) — no overlap with Trap 1 or Alert 3
+    elif 61 <= tc_input <= 69:
+        st.warning(f"⚠️ **50% VAF Trap (Del):** At TC {tc_input}%, Somatic LOH (deletion) approaches VAF ~50%, mimicking Germline Heterozygous. Confirmation required.")
 
-    # Convergence Alert (TC >= 70%)
-    if tc_input >= 70:
-        st.error("⚠️ **LOH Convergence Alert:** High purity causes Germline and Somatic LOH lines to converge. Origin is hard to distinguish by VAF alone.")
-
-    # Mathematical Limit (TC >= 90%)
-    if tc_input >= 90:
-        st.info("💡 **Mathematical Limit:** At TC ≥ 90%, models converge toward 100%. Check family history.")
+    # Alert 3: LOH Convergence (TC >= 70%) — supersedes Trap 2
+    elif tc_input >= 70:
+        st.error("⚠️ **LOH Convergence Alert:** High purity causes Germline and Somatic LOH lines to converge. Origin cannot be determined by VAF alone.")
+        if tc_input >= 90:
+            st.info("💡 **Mathematical Limit:** At TC ≥ 90%, all models converge toward 100%. Family history and germline testing are essential.")
 
     st.divider()
 
-    # Feature: Excel Template Download
+    # Feature: CSV Template Download
     st.subheader("📊 Multi-variant Workflow")
     template_df = pd.DataFrame({"Gene": [gene_name, "TP53"], "TC": [tc_input, tc_input], "VAF": [vaf_input, 0.0]})
     csv_buffer = io.BytesIO()
@@ -89,36 +89,34 @@ with col_alerts:
         **PARPi Indications:**
         - **Ovarian/Prostate:** gBRCA & sBRCA eligible.
         - **Breast/Pancreas:** gBRCA Only (includes **Talazoparib**).
-        
+
         **Lynch Syndrome (MMR-d):**
-        - High ICI responsiveness. 
+        - High responsiveness to **ICIs**. Biallelic loss is a key differentiator.
         """)
 
 # --- RIGHT COLUMN: Visualization ---
 with col_graph:
     st.subheader("📈 VAF-TC Projection")
     fig = go.Figure()
-    
-    # 5 Theoretical Lines
-    colors = {'Germline + cnLOH': '#d4af37', 'Germline + LOH (Del)': '#e41a1c', 'Germline (Hetero)': '#a65628', 
-              'Somatic + cnLOH': '#4daf4a', 'Somatic + LOH (Del)': '#377eb8'}
-    
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_cnloh*100, name="Germline + cnLOH", line=dict(color=colors['Germline + cnLOH'], width=2)))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_del*100, name="Germline + LOH (Del)", line=dict(color=colors['Germline + LOH (Del)'], width=2)))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_hetero*100, name="Germline (Hetero)", line=dict(color=colors['Germline (Hetero)'], width=2)))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_cnloh*100, name="Somatic + cnLOH", line=dict(color=colors['Somatic + cnLOH'], dash='dash')))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_del*100, name="Somatic + LOH (Del)", line=dict(color=colors['Somatic + LOH (Del)'], dash='dot')))
+
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_cnloh*100, name="Germline + cnLOH", line=dict(color='#d4af37', width=2)))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_del*100, name="Germline + LOH (Del)", line=dict(color='#e41a1c', width=2)))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_hetero*100, name="Germline (Hetero)", line=dict(color='#a65628', width=2)))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_cnloh*100, name="Somatic + cnLOH", line=dict(color='#4daf4a', dash='dash')))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_del*100, name="Somatic + LOH (Del)", line=dict(color='#377eb8', dash='dot')))
 
     # Case Plot
     fig.add_trace(go.Scatter(
-        x=[tc_input], y=[vaf_input], mode='markers+text',
+        x=[tc_input], y=[vaf_input],
+        mode='markers+text',
         name=f"Current: {gene_name}",
         text=[f"{gene_name}<br>TC:{tc_input}%<br>VAF:{vaf_input}%"],
-        textposition="top right", marker=dict(color='black', size=14, symbol='x')
+        textposition="top right",
+        marker=dict(color='black', size=14, symbol='x')
     ))
 
     # Low Confidence Zone
-    fig.add_vrect(x0=0, x1=30, fillcolor="gray", opacity=0.1, layer="below", line_width=0, 
+    fig.add_vrect(x0=0, x1=30, fillcolor="gray", opacity=0.1, layer="below", line_width=0,
                   annotation_text="Low Confidence Zone", annotation_position="top left")
 
     fig.update_layout(
@@ -131,4 +129,4 @@ with col_graph:
 
 # 6. Footer
 st.divider()
-st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 2.6 ✅")
+st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 2.7 ✅")
