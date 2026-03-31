@@ -5,50 +5,48 @@
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vaf-tc-app.streamlit.app/)
 
 ## 🧬 Overview
-**VAF-TC Precision Analyzer** is a clinical decision-support tool designed to differentiate between somatic and germline variants by modeling the mathematical relationship between **Pathological Tumor Content (TC)** and **Variant Allele Frequency (VAF)**. 
+**VAF-TC Precision Analyzer** is a clinical decision-support tool for differentiating somatic and germline variants by modeling the relationship between **Pathological Tumor Content (TC)** and **Variant Allele Frequency (VAF)**. 
 
-In precision oncology, distinguishing true germline variants (e.g., *BRCA1/2* in HBOC) from somatic drivers with Loss of Heterozygosity (LOH) is a major diagnostic challenge. This tool provides a robust framework to identify the "50% VAF Trap" and addresses the mathematical convergence in high-purity samples.
+Distinguishing germline variants (e.g., HBOC) from somatic drivers with LOH is critical for treatment and genetic counseling. This tool identifies mathematical "Grey Zones" where VAF-based interpretation becomes ambiguous.
 
 ---
 
 ## 🚀 Key Clinical Features
 
-### 1. The "50% VAF Trap" Alert (Dynamic Logic)
-One of the most critical pitfalls in NGS interpretation is the reflexive assumption that a **VAF ≈ 50%** indicates a germline variant. Our model flags a specific "Grey Zone":
-- **The Intersection:** At a Pathological TC of **~66.7%**, a **Somatic LOH (deletion)** event yields a theoretical VAF of exactly **50%**.
-- **Alert Mechanism:** When TC is between 60-75%, the app triggers a high-priority warning, preventing the misidentification of somatic drivers as hereditary findings.
+### 1. The "50% VAF Trap" (TC 60-75%)
+In clinical NGS, VAF ≈ 50% is often incorrectly assumed to be a germline variant. 
+- **The Intersection:** At TC ≈ 66.7%, a **Somatic LOH (deletion)** event yields a theoretical VAF of **50%**.
+- **Dynamic Alert:** The app warns users when TC is in the 60-75% range, highlighting that somatic mutations can mimic germline findings.
 
-### 2. High TC Convergence Analysis (≥90%)
-At very high tumor purity, the theoretical VAFs for both **Somatic LOH** and **Germline LOH** converge toward 100%. 
-- The tool explicitly alerts users that mathematical differentiation based on VAF alone becomes unreliable in this range.
-- This prevents over-interpretation of VAFs in high-purity samples (e.g., *TP53* somatic LOH vs. germline variants).
+### 2. High TC Convergence Zone (≥90%)
+At very high tumor purity, theoretical models for Somatic LOH and Germline LOH mathematically converge toward 100%.
+- **The Logic:** As $TC \to 100\%$, both models' VAFs approach 1.0. 
+- **Impact:** The tool flags this as a "Mathematical Limit," notifying clinicians that VAF alone cannot distinguish the variant's origin (e.g., *TP53* somatic LOH vs. germline LOH) without clinical correlation.
 
-### 3. Multi-Model Compatibility (±10% Variance)
-To account for NGS "noise" (sequencing depth, library bias) and biological complexity (aneuploidy), the tool lists all theoretical models within a **±10% VAF margin**, ensuring a conservative diagnostic approach.
+### 3. Multi-Model Compatibility (±10% Range)
+Accounting for NGS technical variance and genomic complexity, the tool lists all theoretical models within a **±10% VAF margin**, supporting a conservative diagnostic approach.
 
 ---
 
-## 🩺 Clinical Context & Regulatory Scope
+## 🩺 Clinical & Regulatory Guidance
+
+### Pathological TC as Gold Standard
+This tool prioritizes **Pathological Tumor Content** assessed by a pathologist to avoid the circular reasoning inherent in NGS-derived purity estimates.
 
 ### PARP Inhibitor (PARPi) Indications
-While the identification of **Biallelic Inactivation (LOH)** is a key biomarker for PARPi sensitivity, the app provides guidance on current regulatory landscapes:
-
-| Organ System | Sensitivity Rationale | Clinical Indication (Typical) |
-| :--- | :--- | :--- |
-| **Ovarian & Prostate** | Biallelic inactivation (LOH) | **gBRCA and sBRCA** |
-| **Breast & Pancreatic** | Biallelic inactivation (LOH) | **gBRCA Only** |
-
-*Note: Clinical decisions must always align with regional drug labels (e.g., FDA, PMDA) and professional guidelines (NCCN, ESMO).*
+While Biallelic Inactivation (LOH) is a biological driver of sensitivity, clinical indications are organ-specific:
+- **Ovarian & Prostate:** Approved for both **gBRCA and sBRCA**.
+- **Breast & Pancreatic:** Typically limited to **gBRCA Only**.
 
 ---
 
 ## 🌐 Live Application
-Access the tool here: 👉 **[https://vaf-tc-app.streamlit.app/](https://vaf-tc-app.streamlit.app/)**
+👉 **[https://vaf-tc-app.streamlit.app/](https://vaf-tc-app.streamlit.app/)**
 
 ---
 
 ## 📊 Mathematical Foundation
-The app utilizes the following frameworks ($f$ = Tumor Fraction):
+Models used ($f$ = Tumor Fraction):
 - **Somatic Heterozygous:** $VAF = f / 2$
 - **Somatic LOH (Deletion):** $VAF = f / (2 - f)$
 - **Germline Heterozygous:** $VAF = 0.5$
@@ -56,8 +54,8 @@ The app utilizes the following frameworks ($f$ = Tumor Fraction):
 
 ---
 
-## 🛠 Installation & Usage (Local)
-
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/Clinical-Genetics-Suite-App/vaf-tc-app.git](https://github.com/Clinical-Genetics-Suite-App/vaf-tc-app.git)
+## 🛠 Usage
+```bash
+git clone [https://github.com/Clinical-Genetics-Suite-App/vaf-tc-app.git](https://github.com/Clinical-Genetics-Suite-App/vaf-tc-app.git)
+pip install -r requirements.txt
+streamlit run app.py
