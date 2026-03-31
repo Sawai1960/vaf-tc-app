@@ -64,11 +64,11 @@ with col_alerts:
     if 40 <= tc_input <= 60:
         st.warning(f"⚠️ **Somatic cnLOH Trap:** At TC {tc_input}%, Somatic cnLOH (UPD) produces a VAF of ~50%, perfectly mimicking a Germline Heterozygous variant. Pair-normal testing is essential.")
 
-    # Trap 2: Somatic LOH Deletion Trap (TC 61-69%) — no overlap with Trap 1 or Alert 3
+    # Trap 2: Somatic LOH Deletion Trap (TC 61-69%)
     elif 61 <= tc_input <= 69:
         st.warning(f"⚠️ **50% VAF Trap (Del):** At TC {tc_input}%, Somatic LOH (deletion) approaches VAF ~50%, mimicking Germline Heterozygous. Confirmation required.")
 
-    # Alert 3: LOH Convergence (TC >= 70%) — supersedes Trap 2
+    # Alert 3: LOH Convergence (TC >= 70%)
     elif tc_input >= 70:
         st.error("⚠️ **LOH Convergence Alert:** High purity causes Germline and Somatic LOH lines to converge. Origin cannot be determined by VAF alone.")
         if tc_input >= 90:
@@ -112,7 +112,7 @@ with col_graph:
         name=f"Current: {gene_name}",
         text=[f"{gene_name}<br>TC:{tc_input}%<br>VAF:{vaf_input}%"],
         textposition="top right",
-        marker=dict(color='black', size=14, symbol='x')
+        marker=dict(color='black', size=14, symbol='circle')
     ))
 
     # Low Confidence Zone
@@ -129,4 +129,4 @@ with col_graph:
 
 # 6. Footer
 st.divider()
-st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 2.7 ✅")
+st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 2.8 ✅")
