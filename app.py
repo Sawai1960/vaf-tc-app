@@ -9,7 +9,8 @@ st.set_page_config(page_title="VAF-TC Precision Analyzer", layout="wide")
 
 # 2. Title
 st.title("🧬 VAF-TC Precision Analyzer")
-st.markdown("Interactive clinical decision-support tool for germline/somatic variant differentiation.")
+st.markdown("Interactive visual tool for germline/somatic variant differentiation in tumor-only sequencing.")
+st.caption("⚠️ This tool is intended as a supportive aid for genetic counseling. It does not replace confirmatory germline testing or established clinical guidelines.")
 
 # 3. Sidebar Input Parameters
 st.sidebar.header("📋 Patient Data Input")
@@ -25,7 +26,7 @@ st.sidebar.info(f"💡 **Analysis Mode:** {gene_name}")
 tc = tc_input / 100.0
 vaf = vaf_input / 100.0
 
-# 4. Mathematical Foundation
+# 4. Mathematical Foundation (diploid model)
 x_range = np.linspace(0.01, 1.0, 100)
 y_germ_cnloh = (1 + x_range) / 2
 y_germ_del = 1 / (2 - x_range)
@@ -49,30 +50,66 @@ with col_alerts:
         "Somatic + cnLOH": tc,
         "Somatic + LOH (Del)": tc / (2 - tc)
     }
-    compatible_models = [name for name, val in models_check.items() if abs(val - vaf) <= error_margin]
+    compatible_models = [
+        (name, val) for name, val in models_check.items()
+        if abs(val - vaf) <= error_margin
+    ]
 
     if compatible_models:
-        st.success(f"**Compatible Models for {gene_name}:**")
-        for m in compatible_models:
-            st.markdown(f"- **{m}**")
+        st.success(f"**Compatible Models for {gene_name} (±10%):**")
+        for name, val in compatible_models:
+            st.markdown(f"- **{name}** — theoretical VAF {val*100:.1f}%")
     else:
-        st.info(f"**Insight:** VAF does not closely align with standard models for {gene_name}.")
+        st.info(f"**Insight:** VAF {vaf_input}% does not align with any standard model at TC {tc_input}% (±10%).")
 
-    # --- Clinical Alerts (mutually exclusive by TC range) ---
+    # --- Clinical Alerts ---
 
-    # Trap 1: Somatic cnLOH Trap (TC 40-60%)
+    # Pre-compute key thresholds
+    som_cnloh_vaf = tc * 100                        # Somatic + cnLOH = TC
+    som_del_vaf = tc / (2 - tc) * 100               # Somatic + LOH (Del)
+    germ_del_vaf = 1 / (2 - tc) * 100               # Germline + LOH (Del)
+
+    # Trap 1: Somatic cnLOH Trap (TC 40–60%)
+    #   At TC ≈ 50%, Somatic+cnLOH = TC ≈ 50% = Germline Hetero
     if 40 <= tc_input <= 60:
-        st.warning(f"⚠️ **Somatic cnLOH Trap:** At TC {tc_input}%, Somatic cnLOH (UPD) produces a VAF of ~50%, perfectly mimicking a Germline Heterozygous variant. Pair-normal testing is essential.")
+        st.warning(
+            f"⚠️ **Somatic cnLOH Trap:** At TC {tc_input}%, Somatic cnLOH (UPD) "
+            f"produces VAF = {som_cnloh_vaf:.0f}%, which falls within ±10% of "
+            f"Germline Heterozygous (50%). A somatic variant with cnLOH can "
+            f"masquerade as a germline heterozygous variant. "
+            f"Pair-normal testing is essential."
+        )
 
-    # Trap 2: Somatic LOH Deletion Trap (TC 61-69%)
-    elif 61 <= tc_input <= 69:
-        st.warning(f"⚠️ **50% VAF Trap (Del):** At TC {tc_input}%, Somatic LOH (deletion) approaches VAF ~50%, mimicking Germline Heterozygous. Confirmation required.")
+    # Trap 2: Somatic LOH (Del) approaching 50% (TC 61–66%)
+    #   Gray Zone: Somatic+LOH(Del) approaches Germline Hetero from below
+    elif 61 <= tc_input <= 66:
+        st.warning(
+            f"⚠️ **Gray Zone (Somatic LOH Del):** At TC {tc_input}%, "
+            f"Somatic LOH (deletion) produces VAF = {som_del_vaf:.1f}%, "
+            f"approaching Germline Heterozygous (50%). "
+            f"Confirmation testing is recommended."
+        )
 
-    # Alert 3: LOH Convergence (TC >= 70%)
-    elif tc_input >= 70:
-        st.error("⚠️ **LOH Convergence Alert:** High purity causes Germline and Somatic LOH lines to converge. Origin cannot be determined by VAF alone.")
+    # Alert 3: LOH Convergence Zone (TC ≥ 67%)
+    #   At TC = 2/3 ≈ 66.7%, Somatic+LOH(Del) = Germline Hetero = 50%
+    #   Above this TC, the somatic and germline LOH lines converge
+    elif tc_input >= 67:
+        if vaf_input >= tc / (2 - tc) * 100:
+            st.error(
+                f"🔴 **LOH Convergence Alert:** At TC {tc_input}% and VAF {vaf_input}%, "
+                f"the variant falls at or above the Somatic LOH (deletion) line "
+                f"({som_del_vaf:.1f}%). In this region, Germline LOH (Del) = "
+                f"{germ_del_vaf:.1f}% and Somatic LOH (Del) = {som_del_vaf:.1f}% "
+                f"converge — origin cannot be determined by VAF alone. "
+                f"Germline confirmation is essential."
+            )
         if tc_input >= 90:
-            st.info("💡 **Mathematical Limit:** At TC ≥ 90%, all models converge toward 100%. Family history and germline testing are essential.")
+            st.warning(
+                f"⚠️ **Extreme Tumor Purity:** At TC {tc_input}%, all theoretical "
+                f"models compress into a narrow VAF range. Variants may still be "
+                f"of somatic origin even at high VAF. "
+                f"Family history review and germline testing are essential."
+            )
 
     st.divider()
 
@@ -81,16 +118,16 @@ with col_alerts:
     template_df = pd.DataFrame({"Gene": [gene_name, "TP53"], "TC": [tc_input, tc_input], "VAF": [vaf_input, 0.0]})
     csv_buffer = io.BytesIO()
     template_df.to_csv(csv_buffer, index=False)
-    st.download_button("📥 Download Excel/CSV Template", csv_buffer.getvalue(), "VAF_TC_Template.csv", "text/csv")
+    st.download_button("📥 Download CSV Template", csv_buffer.getvalue(), "VAF_TC_Template.csv", "text/csv")
 
     # Clinical Notes
     with st.expander("📝 Clinical Notes", expanded=True):
         st.markdown("""
         **PARPi Indications:**
         - **Ovarian/Prostate:** gBRCA & sBRCA eligible.
-        - **Breast/Pancreas:** gBRCA Only (includes **Talazoparib**).
+        - **Breast/Pancreas:** gBRCA only.
 
-        **Lynch Syndrome (MMR-d):**
+        **Lynch Syndrome:**
         - High responsiveness to **ICIs**. Biallelic loss is a key differentiator.
         """)
 
@@ -115,7 +152,7 @@ with col_graph:
         marker=dict(color='black', size=14, symbol='circle')
     ))
 
-    # Low Confidence Zone
+    # Low Confidence Zone (TC < 30%)
     fig.add_vrect(x0=0, x1=30, fillcolor="gray", opacity=0.1, layer="below", line_width=0,
                   annotation_text="Low Confidence Zone", annotation_position="top left")
 
@@ -129,4 +166,4 @@ with col_graph:
 
 # 6. Footer
 st.divider()
-st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 2.8 ✅")
+st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 3.0 ✅")
