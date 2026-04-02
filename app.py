@@ -172,6 +172,11 @@ with col_alerts:
             st.warning(f"➡️ {msg}")
         else:
             st.info(f"➡️ {msg}")
+        # VAF-based alerts
+        if v <= 20:
+            st.warning("⚠️ **Low VAF (≤ 20%):** The reliability of this theoretical line is reduced. Low VAF may reflect subclonal variants, admixture with normal tissue, or technical noise.")
+        if v >= 60:
+            st.warning("⚠️ **High VAF (≥ 60%):** High VAF does not exclude a somatic origin. Somatic LOH or copy number changes can elevate VAF into this range.")
         # Gene-specific message
         _, gene_msg = get_gene_message(g)
         st.info(gene_msg)
