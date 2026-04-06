@@ -1,7 +1,8 @@
 # VAF-TC Precision Analyzer
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vaf-tc-app.streamlit.app/)
+[![Streamlit App (EN)](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vaf-tc-app.streamlit.app/)
+[![Streamlit App (JA)](https://img.shields.io/badge/Streamlit-日本語版-FF4B4B?logo=streamlit&logoColor=white)](https://vaf-tc-app-ja.streamlit.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An interactive visual tool for differentiating germline and somatic variants in **tumor-only sequencing**, based on the mathematical relationship between pathological **Tumor Content (TC)** and **Variant Allele Fraction (VAF)**.
@@ -11,7 +12,8 @@ An interactive visual tool for differentiating germline and somatic variants in 
 
 ## Live Application
 
-**https://vaf-tc-app.streamlit.app/**
+- **English:** https://vaf-tc-app.streamlit.app/
+- **Japanese (日本語版):** https://vaf-tc-app-ja.streamlit.app/
 
 ## Background
 

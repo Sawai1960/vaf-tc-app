@@ -1,7 +1,8 @@
 # VAF-TC 精密解析ツール
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vaf-tc-app.streamlit.app/)
+[![Streamlit App (EN)](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vaf-tc-app.streamlit.app/)
+[![Streamlit App (JA)](https://img.shields.io/badge/Streamlit-日本語版-FF4B4B?logo=streamlit&logoColor=white)](https://vaf-tc-app-ja.streamlit.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 腫瘍単独シーケンシングにおける生殖細胞系列・体細胞変異の鑑別を支援するインタラクティブ可視化ツール。病理学的**腫瘍含有率(TC)**と**変異アレル頻度(VAF)**の数学的関係に基づいています。
@@ -11,7 +12,8 @@
 
 ## ライブアプリケーション
 
-**https://vaf-tc-app.streamlit.app/**
+- **English (英語版):** https://vaf-tc-app.streamlit.app/
+- **日本語版:** https://vaf-tc-app-ja.streamlit.app/
 
 ## 背景
 
