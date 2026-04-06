@@ -13,19 +13,6 @@ st.markdown("Interactive visual tool for germline/somatic variant differentiatio
 st.caption("⚠️ This tool is intended as a supportive aid for genetic counseling. It does not replace confirmatory germline testing or established clinical guidelines.")
 st.caption("⚠️ Gene Reference System is based on the **Guidelines for GPV/PGPV Handling Procedures in Cancer Gene Panel Testing (2025 Edition)** (MHLW Research Grant) — T-only PGPV disclosure recommended gene list.")
 
-# Important Note (startup)
-with st.expander("⚠️ Important Note — Mathematical model assumptions and limitations", expanded=True):
-    st.markdown("""
-**The five theoretical VAF-TC curves visualized in this tool are derived from *Knudson's two-hit hypothesis* under a strict diploid model. Please consider the following before clinical interpretation:**
-
-1. **Diploid assumption (Knudson's two-hit model)**: Each theoretical line represents a specific biallelic inactivation scenario assuming a diploid (2-copy) baseline. The five models are idealized mathematical references, not an exhaustive catalog of all possible mechanisms.
-
-2. **Aneuploidy is not accounted for**: Real tumors frequently exhibit aneuploidy, whole-chromosome gains/losses, and subclonal heterogeneity. In such cases, observed VAF may deviate substantially from the theoretical lines, and the model matching must be interpreted with caution.
-
-3. **Tumor content estimation carries ±10–20% error**: Pathological TC estimation is subject to **±10–20% variability** due to histological heterogeneity, sampling region, and inter-observer agreement. This tool applies a ±10% matching margin, but clinical interpretation should consider the full uncertainty range.
-
-4. **Not a diagnostic tool**: This is a visual aid for genetic counseling. Confirmatory germline testing remains the standard for any clinical decision.
-""")
 
 # 3. Gene Reference Data — based on Guidelines for GPV/PGPV Handling Procedures in Cancer Gene Panel Testing (2025 Edition)
 GENE_INFO = {
@@ -266,6 +253,20 @@ with col_alerts:
         st.subheader("📋 Uploaded Variants")
         st.dataframe(multi_df, use_container_width=True)
         st.divider()
+
+    # Important Note — Mathematical model assumptions and limitations
+    st.subheader("⚠️ Important Note")
+    st.markdown("""
+**The five theoretical VAF-TC curves are derived from *Knudson's two-hit hypothesis* under a strict diploid model.**
+
+1. **Diploid assumption (Knudson's two-hit model)**: Each theoretical line represents a specific biallelic inactivation scenario assuming a diploid (2-copy) baseline. The five models are idealized mathematical references, not an exhaustive catalog of all possible mechanisms.
+
+2. **Aneuploidy is not accounted for**: Real tumors frequently exhibit aneuploidy, whole-chromosome gains/losses, and subclonal heterogeneity. In such cases, observed VAF may deviate substantially from the theoretical lines, and the model matching must be interpreted with caution.
+
+3. **Tumor content estimation carries ±10–20% error**: Pathological TC estimation is subject to **±10–20% variability** due to histological heterogeneity, sampling region, and inter-observer agreement. This tool applies a ±10% matching margin, but clinical interpretation should consider the full uncertainty range.
+
+4. **Not a diagnostic tool**: This is a visual aid for genetic counseling. Confirmatory germline testing remains the standard for any clinical decision.
+""")
 
 
 # --- RIGHT COLUMN: Visualization ---
