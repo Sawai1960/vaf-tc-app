@@ -11,49 +11,65 @@ st.set_page_config(page_title="VAF-TC Precision Analyzer", layout="wide")
 st.title("🧬 VAF-TC Precision Analyzer")
 st.markdown("Interactive visual tool for germline/somatic variant differentiation in tumor-only sequencing.")
 st.caption("⚠️ This tool is intended as a supportive aid for genetic counseling. It does not replace confirmatory germline testing or established clinical guidelines.")
-st.caption("⚠️ This tool does not incorporate gene-specific prior probabilities. Genes such as TP53, APC, and PTEN have high somatic mutation rates; clinical context and family history are essential for interpretation.")
+st.caption("⚠️ Gene Reference System is based on the **2025 Kosugi group guidelines** (がん遺伝子パネル検査におけるGPV/PGPV対応手順に関する指針 2025版) — T-only PGPV disclosure recommended gene list.")
 
-# 3. Gene Reference Data
+# Important Note (startup)
+with st.expander("⚠️ Important Note — Mathematical model assumptions and limitations", expanded=True):
+    st.markdown("""
+**The five theoretical VAF-TC curves visualized in this tool are derived from *Knudson's two-hit hypothesis* under a strict diploid model. Please consider the following before clinical interpretation:**
+
+1. **Diploid assumption (Knudson's two-hit model)**: Each theoretical line represents a specific biallelic inactivation scenario assuming a diploid (2-copy) baseline. The five models are idealized mathematical references, not an exhaustive catalog of all possible mechanisms.
+
+2. **Aneuploidy is not accounted for**: Real tumors frequently exhibit aneuploidy, whole-chromosome gains/losses, and subclonal heterogeneity. In such cases, observed VAF may deviate substantially from the theoretical lines, and the model matching must be interpreted with caution.
+
+3. **Tumor content estimation carries ±10–20% error**: Pathological TC estimation is subject to **±10–20% variability** due to histological heterogeneity, sampling region, and inter-observer agreement. This tool applies a ±10% matching margin, but clinical interpretation should consider the full uncertainty range.
+
+4. **Not a diagnostic tool**: This is a visual aid for genetic counseling. Confirmatory germline testing remains the standard for any clinical decision.
+""")
+
+# 3. Gene Reference Data — based on 2025 Kosugi group guidelines (T-only PGPV disclosure recommended genes, 31 genes)
 GENE_INFO = {
-    # Germline-priority genes
-    "BRCA1":  ("germline", "🟡 BRCA1: Germline variants are clinically significant (HBOC). Confirmatory germline testing is recommended when VAF pattern is consistent with germline."),
-    "BRCA2":  ("germline", "🟡 BRCA2: Germline variants are clinically significant (HBOC). Confirmatory germline testing is recommended when VAF pattern is consistent with germline."),
-    "PALB2":  ("germline", "🟡 PALB2: Germline variants are associated with hereditary breast cancer. Confirmatory germline testing is recommended."),
-    "ATM":    ("germline", "🟡 ATM: Germline variants are associated with hereditary breast cancer and ataxia-telangiectasia. Confirmatory testing is recommended."),
-    "CHEK2":  ("germline", "🟡 CHEK2: Germline variants are associated with hereditary breast and colorectal cancer. Confirmatory testing is recommended."),
-    "MLH1":   ("germline", "🟡 MLH1: Germline variants are associated with Lynch syndrome. Confirmatory germline testing is strongly recommended."),
-    "MSH2":   ("germline", "🟡 MSH2: Germline variants are associated with Lynch syndrome. Confirmatory germline testing is strongly recommended."),
-    "MSH6":   ("germline", "🟡 MSH6: Germline variants are associated with Lynch syndrome. Confirmatory germline testing is strongly recommended."),
-    "PMS2":   ("germline", "🟡 PMS2: Germline variants are associated with Lynch syndrome. Confirmatory germline testing is strongly recommended."),
-    "RAD51C": ("germline", "🟡 RAD51C: Germline variants are associated with hereditary ovarian cancer. Confirmatory testing is recommended."),
-    "RAD51D": ("germline", "🟡 RAD51D: Germline variants are associated with hereditary ovarian cancer. Confirmatory testing is recommended."),
-    "CDH1":   ("germline", "🟡 CDH1: Germline variants are associated with hereditary diffuse gastric cancer. Confirmatory testing is recommended."),
-    "VHL":    ("germline", "🟡 VHL: Germline variants are associated with von Hippel-Lindau disease. Confirmatory testing is recommended."),
-    "RB1":    ("germline", "🟡 RB1: Germline variants are associated with hereditary retinoblastoma. Confirmatory testing is recommended."),
-    "NF1":    ("germline", "🟡 NF1: Germline variants are associated with neurofibromatosis type 1. Confirmatory testing is recommended."),
-    "STK11":  ("germline", "🟡 STK11: Germline variants are associated with Peutz-Jeghers syndrome. Confirmatory testing is recommended."),
-    # Dual-importance genes
-    "TP53":   ("dual", "🟠 TP53: **Both germline and somatic variants are clinically important.** Somatic TP53 mutations are the most common in cancer. However, germline TP53 (Li-Fraumeni syndrome) should be considered in young-onset cancer, multiple primary cancers, or strong family history."),
-    "APC":    ("dual", "🟠 APC: **Both germline and somatic variants are clinically important.** Somatic APC mutations are frequent in colorectal cancer. Germline APC (familial adenomatous polyposis, FAP) should be considered when polyposis or strong family history is present."),
-    "PTEN":   ("dual", "🟠 PTEN: **Both germline and somatic variants are clinically important.** Somatic PTEN loss is common in many cancers. Germline PTEN (Cowden syndrome) should be considered when multiple hamartomas or relevant family history is present."),
-    "CDKN2A": ("dual", "🟠 CDKN2A: **Both germline and somatic variants are clinically important.** Somatic alterations are common. Germline CDKN2A is associated with hereditary melanoma and pancreatic cancer."),
-    # Somatic-priority genes
-    "KRAS":   ("somatic", "🔵 KRAS: Germline KRAS variants causing cancer are extremely rare. This variant is most likely somatic in origin."),
-    "PIK3CA": ("somatic", "🔵 PIK3CA: Germline variants are extremely rare in cancer. This variant is most likely somatic in origin."),
-    "BRAF":   ("somatic", "🔵 BRAF: Germline variants are extremely rare in cancer. This variant is most likely somatic in origin."),
-    "EGFR":   ("somatic", "🔵 EGFR: Germline variants are extremely rare in cancer. This variant is most likely somatic in origin."),
-    "NRAS":   ("somatic", "🔵 NRAS: Germline variants are extremely rare in cancer. This variant is most likely somatic in origin."),
-    "IDH1":   ("somatic", "🔵 IDH1: Germline variants are extremely rare. This variant is most likely somatic in origin."),
-    "IDH2":   ("somatic", "🔵 IDH2: Germline variants are extremely rare. This variant is most likely somatic in origin."),
-    "MET":    ("somatic", "🔵 MET: Somatic mutations are common. Germline MET is rarely associated with hereditary papillary renal cell carcinoma."),
-    "CDK4":   ("somatic", "🔵 CDK4: Germline variants are extremely rare in cancer. This variant is most likely somatic in origin."),
+    # 🔴 Low VAF threshold (VAF >= 10%) — special handling
+    "BRCA1":  ("low_threshold", "🔴 BRCA1 [2025 Kosugi]: **VAF ≥ 10%** threshold (lower than standard). Even low-VAF variants may be GPV. Expert panel review and confirmatory germline testing recommended. HBOC."),
+    "BRCA2":  ("low_threshold", "🔴 BRCA2 [2025 Kosugi]: **VAF ≥ 10%** threshold (lower than standard). Even low-VAF variants may be GPV. Expert panel review and confirmatory germline testing recommended. HBOC."),
+    # 🟠 Age-conditional (disclosure if SNV VAF ≥ 30% / indel ≥ 20% AND age of onset < 30 y)
+    "APC":    ("age_cond", "🟠 APC [2025 Kosugi]: PGPV disclosure if **SNV VAF ≥ 30% (indel ≥ 20%) AND colorectal polyposis onset < 30 y**. FAP. Phenotype evaluation required (Box_E)."),
+    "CDKN2A": ("age_cond", "🟠 CDKN2A [2025 Kosugi]: PGPV disclosure if **SNV VAF ≥ 30% (indel ≥ 20%) AND onset < 30 y**. Hereditary melanoma-pancreatic cancer syndrome."),
+    "PTEN":   ("age_cond", "🟠 PTEN [2025 Kosugi]: PGPV disclosure if **SNV VAF ≥ 30% (indel ≥ 20%) AND onset < 30 y**. Cowden syndrome. Phenotype evaluation required (Box_E)."),
+    "RB1":    ("age_cond", "🟠 RB1 [2025 Kosugi]: PGPV disclosure if **SNV VAF ≥ 30% (indel ≥ 20%) AND onset < 30 y**. Hereditary retinoblastoma. Phenotype evaluation required (Box_E)."),
+    "TP53":   ("age_cond", "🟠 TP53 [2025 Kosugi]: PGPV disclosure if **SNV VAF ≥ 30% (indel ≥ 20%) AND onset < 30 y**. Li-Fraumeni syndrome. Phenotype evaluation required (Box_E). Note: clonal hematopoiesis possible at high VAF."),
+    # 🟡 Standard (SNV VAF ≥ 30% / indel ≥ 20%) — 24 genes
+    "ATM":    ("standard", "🟡 ATM [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HBOC, ataxia-telangiectasia."),
+    "BAP1":   ("standard", "🟡 BAP1 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. BAP1 tumor predisposition syndrome."),
+    "BARD1":  ("standard", "🟡 BARD1 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HBOC."),
+    "BRIP1":  ("standard", "🟡 BRIP1 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HBOC."),
+    "CHEK2":  ("standard", "🟡 CHEK2 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HBOC."),
+    "DICER1": ("standard", "🟡 DICER1 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. DICER1 syndrome (pleuropulmonary blastoma, etc.)."),
+    "FH":     ("standard", "🟡 FH [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HLRCC (hereditary leiomyomatosis and renal cell cancer)."),
+    "FLCN":   ("standard", "🟡 FLCN [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Birt-Hogg-Dubé syndrome."),
+    "MLH1":   ("standard", "🟡 MLH1 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Lynch syndrome."),
+    "MSH2":   ("standard", "🟡 MSH2 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Lynch syndrome."),
+    "MSH6":   ("standard", "🟡 MSH6 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Lynch syndrome."),
+    "MUTYH":  ("standard", "🟡 MUTYH [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**, **bi-allelic only**. MUTYH-associated polyposis."),
+    "NF1":    ("standard", "🟡 NF1 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Neurofibromatosis type 1. Phenotype evaluation required (Box_E)."),
+    "PALB2":  ("standard", "🟡 PALB2 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HBOC."),
+    "PMS2":   ("standard", "🟡 PMS2 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Lynch syndrome."),
+    "POLD1":  ("standard", "🟡 POLD1 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Hereditary colorectal cancer."),
+    "POLE":   ("standard", "🟡 POLE [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Hereditary colorectal cancer."),
+    "RAD51C": ("standard", "🟡 RAD51C [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HBOC."),
+    "RAD51D": ("standard", "🟡 RAD51D [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. HBOC."),
+    "RET":    ("standard", "🟡 RET [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. MEN2 (multiple endocrine neoplasia type 2)."),
+    "SDHA":   ("standard", "🟡 SDHA [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Hereditary paraganglioma-pheochromocytoma syndrome."),
+    "SDHB":   ("standard", "🟡 SDHB [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Hereditary paraganglioma-pheochromocytoma syndrome."),
+    "TSC2":   ("standard", "🟡 TSC2 [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. Tuberous sclerosis complex."),
+    "VHL":    ("standard", "🟡 VHL [2025 Kosugi]: Disclosure at **SNV VAF ≥ 30% (indel ≥ 20%)**. von Hippel-Lindau syndrome."),
 }
 
 def get_gene_message(gene):
     key = gene.upper().strip()
     if key in GENE_INFO:
         return GENE_INFO[key]
-    return ("unknown", f"⬜ {gene}: Not in reference list. Consult established clinical guidelines and family history for interpretation.")
+    return ("not_listed", f"⬜ {gene}: Not on the 2025 Kosugi group T-only PGPV disclosure recommended gene list. Germline disclosure priority is lower per the guidelines. Consult clinical guidelines and family history for comprehensive assessment.")
 
 # 4. Sidebar Input Parameters
 st.sidebar.header("📋 Patient Data Input")
@@ -88,26 +104,27 @@ if uploaded_file is not None:
 st.sidebar.markdown("---")
 st.sidebar.info(f"💡 **Analysis Mode:** {gene_name}")
 
-# Gene Reference Table in Sidebar
-with st.sidebar.expander("📖 Gene Reference"):
-    st.markdown("**🟡 Germline-priority genes:**")
-    st.caption("BRCA1, BRCA2, PALB2, ATM, CHEK2, MLH1, MSH2, MSH6, PMS2, RAD51C, RAD51D, CDH1, VHL, RB1, NF1, STK11")
-    st.markdown("**🟠 Both germline & somatic important:**")
-    st.caption("TP53 (Li-Fraumeni), APC (FAP), PTEN (Cowden), CDKN2A (hereditary melanoma)")
-    st.markdown("**🔵 Somatic-priority genes:**")
-    st.caption("KRAS, PIK3CA, BRAF, EGFR, NRAS, IDH1, IDH2, MET, CDK4")
-    st.caption("⬜ Genes not listed: consult clinical guidelines and family history.")
+# Gene Reference Table in Sidebar (2025 Kosugi guidelines)
+with st.sidebar.expander("📖 Gene Reference (2025 Kosugi guidelines)"):
+    st.markdown("**🔴 Low VAF threshold (VAF ≥ 10%):**")
+    st.caption("BRCA1, BRCA2")
+    st.markdown("**🟠 Age-conditional (onset < 30 y):**")
+    st.caption("APC (colorectal polyposis), CDKN2A, PTEN, RB1, TP53")
+    st.markdown("**🟡 Standard (SNV VAF ≥ 30%, indel ≥ 20%):**")
+    st.caption("ATM, BAP1, BARD1, BRIP1, CHEK2, DICER1, FH, FLCN, MLH1, MSH2, MSH6, MUTYH(bi), NF1, PALB2, PMS2, POLD1, POLE, RAD51C, RAD51D, RET, SDHA, SDHB, TSC2, VHL")
+    st.caption("⬜ Genes not listed: not on the 2025 T-only PGPV list.")
+    st.caption("Reference: がん遺伝子パネル検査におけるGPV/PGPV対応手順に関する指針2025版 (小杉班指針)")
 
 tc = tc_input / 100.0
 vaf = vaf_input / 100.0
 
-# 5. Mathematical Foundation (diploid model)
+# 5. Mathematical Foundation (diploid model) — 5 theoretical models
 x_range = np.linspace(0.01, 1.0, 100)
-y_germ_cnloh = (1 + x_range) / 2
-y_germ_del = 1 / (2 - x_range)
-y_germ_hetero = np.full_like(x_range, 0.5)
-y_som_cnloh = x_range
-y_som_del = x_range / (2 - x_range)
+y_germ_cnloh  = (1 + x_range) / 2         # germline (cnLOH)
+y_germ_del    = 1 / (2 - x_range)         # germline (LOH with Del)
+y_germ_hetero = np.full_like(x_range, 0.5) # germline (Hetero)
+y_som_del     = x_range / (2 - x_range)   # somatic (LOH with Del)
+y_som_hetero  = x_range / 2               # somatic (Hetero)
 
 # 6. Main Layout (Left 1 : Right 2)
 col_alerts, col_graph = st.columns([1, 2])
@@ -122,11 +139,11 @@ with col_alerts:
         f = tc_val / 100.0
         v = vaf_val / 100.0
         checks = {
-            "Germline + cnLOH": (1 + f) / 2,
-            "Germline + LOH (Del)": 1 / (2 - f),
-            "Germline (Hetero)": 0.5,
-            "Somatic + cnLOH": f,
-            "Somatic + LOH (Del)": f / (2 - f)
+            "germline (cnLOH)":        (1 + f) / 2,
+            "germline (LOH with Del)": 1 / (2 - f),
+            "germline (Hetero)":       0.5,
+            "somatic (LOH with Del)":  f / (2 - f),
+            "somatic (Hetero)":        f / 2,
         }
         return [(name, val) for name, val in checks.items() if abs(val - v) <= error_margin]
 
@@ -134,28 +151,37 @@ with col_alerts:
         names = [name for name, _ in compatible]
         if not names:
             return "warning", "VAF does not align with any standard model. Consider clonal heterogeneity, aneuploidy, or complex copy number changes."
-        germ_hetero = "Germline (Hetero)"    in names
-        germ_cnloh  = "Germline + cnLOH"     in names
-        germ_del    = "Germline + LOH (Del)"  in names
-        som_cnloh   = "Somatic + cnLOH"       in names
-        som_del     = "Somatic + LOH (Del)"   in names
+        germ_cnloh  = "germline (cnLOH)"        in names
+        germ_del    = "germline (LOH with Del)" in names
+        germ_hetero = "germline (Hetero)"       in names
+        som_del     = "somatic (LOH with Del)"  in names
+        som_hetero  = "somatic (Hetero)"        in names
 
-        if germ_hetero and som_cnloh and not germ_del and not som_del:
-            return "error", "VAF alone **cannot distinguish** Germline (Hetero) from Somatic + cnLOH (UPD). These two models produce identical VAF at this TC. **Pair-normal germline testing is essential.**"
-        elif germ_del and som_del:
-            return "error", "VAF alone **cannot distinguish** Germline LOH (Del) from Somatic LOH (Del). These lines converge at this TC. **Germline confirmation is essential.**"
-        elif germ_cnloh and not som_cnloh and not som_del:
+        has_germ = germ_cnloh or germ_del or germ_hetero
+        has_som  = som_del or som_hetero
+
+        # Ambiguous: both germline and somatic compatible
+        if has_germ and has_som:
+            return "error", "VAF is compatible with **both germline and somatic** models at this TC. VAF alone **cannot determine the origin**. **Pair-normal germline testing is essential.**"
+        # Pure germline — single model
+        if germ_cnloh and not germ_del and not germ_hetero:
             return "success", "Pattern is consistent with a **germline variant that has undergone copy-neutral LOH (UPD)**. Biallelic inactivation via germline + cnLOH."
-        elif germ_del and not som_del:
+        if germ_del and not germ_cnloh and not germ_hetero:
             return "success", "Pattern is consistent with a **germline variant with LOH by deletion**. Biallelic inactivation via germline + deletion."
-        elif germ_hetero and not som_cnloh:
+        if germ_hetero and not germ_cnloh and not germ_del:
             return "success", "Pattern is consistent with a **heterozygous germline variant without LOH**. Only one allele is affected."
-        elif som_cnloh and not germ_hetero:
-            return "info", "Pattern is consistent with a **somatic variant with copy-neutral LOH (UPD)**. Germline origin is less likely, but pair-normal testing is recommended."
-        elif som_del and not germ_del:
-            return "info", "Pattern is consistent with a **somatic variant with LOH by deletion**. Germline origin is less likely at this TC."
-        else:
-            return "info", "Multiple models are compatible. Clinical correlation and pair-normal testing are recommended."
+        # Multiple germline models
+        if has_germ:
+            return "info", "Multiple germline models are compatible. Germline origin is likely, but the LOH mechanism cannot be determined from VAF alone."
+        # Pure somatic — single model
+        if som_del and not som_hetero:
+            return "info", "Pattern is consistent with a **somatic variant with LOH by deletion**. Germline origin is unlikely at this TC."
+        if som_hetero and not som_del:
+            return "info", "Pattern is consistent with a **somatic heterozygous variant (without LOH)**. Germline origin is unlikely at this TC."
+        # Multiple somatic models
+        if has_som:
+            return "info", "Multiple somatic models are compatible. Somatic origin is likely at this TC."
+        return "info", "Clinical correlation and pair-normal testing are recommended."
 
     def show_variant_interpretation(g, t, v):
         compatible = get_compatible_models(t, v)
@@ -172,15 +198,15 @@ with col_alerts:
             st.warning(f"➡️ {msg}")
         else:
             st.info(f"➡️ {msg}")
-        # VAF-based alerts
-        if v <= 20:
-            st.warning("⚠️ **Low VAF (≤ 20%):** The reliability of this theoretical line is reduced. Low VAF may reflect subclonal variants, admixture with normal tissue, or technical noise.")
-        if v >= 60:
-            st.warning("⚠️ **High VAF (≥ 60%):** High VAF does not exclude a somatic origin. Somatic LOH or copy number changes can elevate VAF into this range.")
-        # Gene-specific message
+        # TC-based alerts
+        if t <= 20:
+            st.warning("⚠️ **Low TC (≤ 20%):** At low tumor content, theoretical lines are compressed into a narrow VAF range and model matching is less reliable. Subclonal variants, admixture with normal tissue, or technical noise may dominate.")
+        if t >= 60:
+            st.warning("⚠️ **High TC (≥ 60%):** At high tumor content, germline and somatic LOH lines begin to converge. Origin determination by VAF alone becomes increasingly difficult.")
+        # Gene-specific message (2025 Kosugi guidelines)
         _, gene_msg = get_gene_message(g)
         st.info(gene_msg)
-        st.caption("💡 Note: VAF–TC interpretation is based on mathematical models only and does not reflect gene-specific germline likelihood.")
+        st.caption("💡 Note: VAF–TC interpretation is based on mathematical models only. Gene-specific germline likelihood is provided separately per the 2025 Kosugi guidelines.")
 
     if multi_df is not None:
         for _, row in multi_df.iterrows():
@@ -189,33 +215,24 @@ with col_alerts:
     else:
         show_variant_interpretation(gene_name, tc_input, vaf_input)
 
-    # --- Clinical Alerts ---
-    som_cnloh_vaf = tc * 100
-    som_del_vaf = tc / (2 - tc) * 100
-    germ_del_vaf = 1 / (2 - tc) * 100
+    # --- TC-based Clinical Alerts ---
+    som_del_vaf  = tc / (2 - tc) * 100 if tc < 2 else 0
+    germ_del_vaf = 1 / (2 - tc) * 100 if tc < 2 else 0
 
-    if 40 <= tc_input <= 60:
-        st.warning(
-            f"⚠️ **Somatic cnLOH Trap:** At TC {tc_input}%, Somatic cnLOH (UPD) "
-            f"produces VAF = {som_cnloh_vaf:.0f}%, which falls within ±10% of "
-            f"Germline Heterozygous (50%). A somatic variant with cnLOH can "
-            f"masquerade as a germline heterozygous variant. "
-            f"Pair-normal testing is essential."
-        )
-    elif 61 <= tc_input <= 66:
+    if 61 <= tc_input <= 66:
         st.warning(
             f"⚠️ **Gray Zone (Somatic LOH Del):** At TC {tc_input}%, "
-            f"Somatic LOH (deletion) produces VAF = {som_del_vaf:.1f}%, "
-            f"approaching Germline Heterozygous (50%). "
+            f"somatic (LOH with Del) produces VAF = {som_del_vaf:.1f}%, "
+            f"approaching germline (Hetero) at 50%. "
             f"Confirmation testing is recommended."
         )
     elif tc_input >= 67:
         if vaf_input >= tc / (2 - tc) * 100:
             st.error(
                 f"🔴 **LOH Convergence Alert:** At TC {tc_input}% and VAF {vaf_input}%, "
-                f"the variant falls at or above the Somatic LOH (deletion) line "
-                f"({som_del_vaf:.1f}%). In this region, Germline LOH (Del) = "
-                f"{germ_del_vaf:.1f}% and Somatic LOH (Del) = {som_del_vaf:.1f}% "
+                f"the variant falls at or above the somatic (LOH with Del) line "
+                f"({som_del_vaf:.1f}%). In this region, germline (LOH with Del) = "
+                f"{germ_del_vaf:.1f}% and somatic (LOH with Del) = {som_del_vaf:.1f}% "
                 f"converge — origin cannot be determined by VAF alone. "
                 f"Germline confirmation is essential."
             )
@@ -265,11 +282,11 @@ with col_graph:
     st.subheader("📈 VAF-TC Projection")
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_cnloh*100, name="Germline + cnLOH", line=dict(color='#d4af37', width=2)))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_del*100, name="Germline + LOH (Del)", line=dict(color='#e41a1c', width=2)))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_hetero*100, name="Germline (Hetero)", line=dict(color='#a65628', width=2)))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_cnloh*100, name="Somatic + cnLOH", line=dict(color='#4daf4a', dash='dash')))
-    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_del*100, name="Somatic + LOH (Del)", line=dict(color='#377eb8', dash='dot')))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_cnloh*100,  name="germline (cnLOH)",        line=dict(color='#d4af37', width=2)))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_del*100,    name="germline (LOH with Del)", line=dict(color='#e41a1c', width=2)))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_germ_hetero*100, name="germline (Hetero)",       line=dict(color='#a65628', width=2)))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_del*100,     name="somatic (LOH with Del)",  line=dict(color='#377eb8', dash='dot')))
+    fig.add_trace(go.Scatter(x=x_range*100, y=y_som_hetero*100,  name="somatic (Hetero)",        line=dict(color='#4daf4a', dash='dash')))
 
     if multi_df is not None:
         colors = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00',
@@ -294,7 +311,7 @@ with col_graph:
             marker=dict(color='black', size=14, symbol='circle')
         ))
 
-    fig.add_vrect(x0=0, x1=30, fillcolor="gray", opacity=0.1, layer="below", line_width=0,
+    fig.add_vrect(x0=0, x1=20, fillcolor="gray", opacity=0.1, layer="below", line_width=0,
                   annotation_text="Low Confidence Zone", annotation_position="top left")
 
     fig.update_layout(
@@ -307,4 +324,4 @@ with col_graph:
 
 # 7. Footer
 st.divider()
-st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 3.2 ✅")
+st.caption("VAF-TC Precision Analyzer | Clinical Genetics Suite | ver 3.3 ✅")
